@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendio – Vos publications en quelques secondes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0E1116;--fg:#F2F5F7;--mut:#A8B3BF;--card:#171C24;--line:#2A323D;--acc:#3DDC84;--on:#08130C;color-scheme:dark}
+@media (prefers-color-scheme: light){:root{--bg:#F6F8FA;--fg:#14181F;--mut:#4B5663;--card:#FFFFFF;--line:#D5DBE2;--acc:#0F7B43;--on:#FFFFFF;color-scheme:light}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Inter,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 56px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1,h2,.logo{font-family:'Space Grotesk',sans-serif;margin:0}
+.logo{font-size:26px;font-weight:700}h1{font-size:32px;line-height:1.15}h2{font-size:20px}
+.mut{color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.f{display:flex;flex-direction:column;gap:8px}
+label,.lb{font-size:14px;font-weight:600;color:var(--mut)}
+input[type=text],input[type=email],input[type=password],textarea,select,input[type=file]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px Inter,sans-serif;min-height:44px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chip,.ghost,.go{min-height:44px;padding:10px 18px;border-radius:999px;font:500 15px Inter,sans-serif;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--fg)}
+.chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:600}
+.go{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700;font-size:16px;min-height:48px}
+.go:disabled,.ghost:disabled{opacity:.55;cursor:not-allowed}
+.post{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.post p{margin:0;white-space:pre-wrap}
+.tag{font-size:13px;font-weight:600;color:var(--acc)}
+[hidden]{display:none!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<main>
+<header><span class="logo">Vendio</span><span class="row" style="align-items:center"><span class="mut" id="who"></span><button type="button" class="ghost" id="out" hidden>Se déconnecter</button></span></header>
+
+<section id="auth" class="card">
+<h1>Vos publications, prêtes en quelques secondes</h1>
+<p class="mut" style="margin:0">Créez un compte gratuit pour générer des publications pour vos produits : ebooks, vêtements, services.</p>
+<div class="f"><label for="em">Adresse e-mail</label><input id="em" type="email" autocomplete="email"></div>
+<div class="f"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="current-password"></div>
+<div class="row"><button type="button" class="go" id="login">Se connecter</button><button type="button" class="ghost" id="signup">Créer un compte</button></div>
+<p class="mut" id="amsg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+
+<div id="app" hidden style="display:flex;flex-direction:column;gap:20px">
+<h1>Créer mes publications</h1>
+<p class="mut" id="left" style="margin:0"></p>
+<section class="card">
+<div class="f"><span class="lb">Type de produit</span><div class="row" id="types"><button type="button" class="chip" aria-pressed="true">Ebook</button><button type="button" class="chip" aria-pressed="false">Produit physique</button><button type="button" class="chip" aria-pressed="false">Service</button></div></div>
+<div class="f"><label for="nom">Nom du produit</label><input id="nom" type="text" maxlength="120" autocomplete="off"></div>
+<div class="f"><label for="desc">Description, prix et public visé</label><textarea id="desc" rows="4" maxlength="800" placeholder="Ex. : robes en pagne, de 8 000 à 15 000 FCFA, pour les femmes de 20 à 40 ans"></textarea></div>
+<div class="f"><label for="photo">Photo du produit (facultatif)</label><input id="photo" type="file" accept="image/*"><span class="mut">1 photo par génération.</span></div>
+<div class="f"><label for="lien">Lien vers votre produit (facultatif)</label><input id="lien" type="text" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://..."><span class="mut">S’il est rempli, ce lien sera ajouté dans chaque publication.</span></div>
+<div class="f"><span class="lb">Plateformes</span><div class="row" id="plats"><button type="button" class="chip" aria-pressed="true">WhatsApp</button><button type="button" class="chip" aria-pressed="true">Facebook</button><button type="button" class="chip" aria-pressed="true">Instagram</button><button type="button" class="chip" aria-pressed="false">TikTok</button></div></div>
+<div class="f"><label for="duree">Durée du calendrier</label><select id="duree"><option value="7">7 jours</option><option value="30" id="o30" disabled>30 jours (Premium)</option></select></div>
+<button type="button" class="go" id="go">Générer mes publications</button>
+<p class="mut" id="msg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+<section class="card" id="res" hidden>
+<h2>Mon calendrier</h2>
+<div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" disabled>Programmer · Premium</button></div>
+<div id="outp" class="f" style="gap:12px"></div>
+</section>
+<p class="mut">Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes.</p>
+</div>
+</main>
+<script>
+const SB_URL='https://obwbkstxzdbtaqbuwloa.supabase.co';
+const SB_KEY='sb_publishable_Srwd_vkFi7GkFIWzl9X52Q_tosKy797';
+const FN=SB_URL+'/functions/v1/smart-service';
+const LIM=3;
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=s=>document.querySelector(s);
+const st={type:'Ebook',plats:new Set(['WhatsApp','Facebook','Instagram']),photo:null,all:'',plan:'free',used:0};
+function amsg(t){$('#amsg').textContent=t}
+function msg(t){$('#msg').textContent=t}
+
+async function refresh(){
+  const {data}=await sb.auth.getSession();
+  const s=data.session;
+  $('#auth').hidden=!!s;
+  $('#app').hidden=!s;
+  $('#out').hidden=!s;
+  $('#who').textContent=s?s.user.email:'';
+  if(s)loadQuota();
+}
+sb.auth.onAuthStateChange(()=>setTimeout(refresh,0));
+refresh();
+
+async function loadQuota(){
+  const m=new Date().toISOString().slice(0,7);
+  const [p,u]=await Promise.all([
+    sb.from('profiles').select('plan').maybeSingle(),
+    sb.from('usage').select('count').eq('month',m).maybeSingle()
+  ]);
+  st.plan=(p.data&&p.data.plan)||'free';
+  st.used=(u.data&&u.data.count)||0;
+  $('#o30').disabled=st.plan!=='premium';
+  if(st.plan==='premium'){$('#left').textContent='Plan Premium';}
+  else{const n=Math.max(0,LIM-st.used);$('#left').textContent=n+' génération'+(n>1?'s':'')+' gratuite'+(n>1?'s':'')+' restante'+(n>1?'s':'')+' ce mois-ci';}
+}
+
+$('#login').addEventListener('click',async()=>{
+  const email=$('#em').value.trim(),password=$('#pw').value;
+  if(!email||!password){amsg('Renseignez votre e-mail et votre mot de passe.');return}
+  amsg('Connexion…');
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){amsg(/not confirmed/i.test(error.message)?'Confirmez d’abord votre adresse e-mail (vérifiez votre boîte de réception).':'E-mail ou mot de passe incorrect.');return}
+  amsg('');
+});
+$('#signup').addEventListener('click',async()=>{
+  const email=$('#em').value.trim(),password=$('#pw').value;
+  if(!email||password.length<8){amsg('Entrez un e-mail et un mot de passe de 8 caractères minimum.');return}
+  amsg('Création du compte…');
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){amsg(/registered|exists/i.test(error.message)?'Ce compte existe déjà, connectez-vous.':'Impossible de créer le compte : '+error.message);return}
+  amsg(data.session?'':'Compte créé. Vérifiez votre boîte e-mail pour confirmer, puis connectez-vous.');
+});
+$('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true});
+
+function chips(id,single){const bs=document.querySelectorAll('#'+id+' button');bs.forEach(b=>b.addEventListener('click',()=>{if(single){bs.forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.type=b.textContent}else{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));on?st.plats.add(b.textContent):st.plats.delete(b.textContent)}}))}
+chips('types',true);chips('plats',false);
+$('#photo').addEventListener('change',e=>{st.photo=e.target.files[0]||null});
+
+function shrink(f){return new Promise(res=>{const im=new Image();const u=URL.createObjectURL(f);im.onload=()=>{const k=Math.min(1,1024/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({mime:'image/jpeg',data:c.toDataURL('image/jpeg',0.8).split(',')[1]})};im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u})}
+async function copy(t,b){const l=b.dataset.l||b.textContent;b.dataset.l=l;try{await navigator.clipboard.writeText(t);b.textContent='Copié'}catch(e){b.textContent='Copie impossible'}setTimeout(()=>{b.textContent=l},1500)}
+function render(d){
+  const out=$('#outp');out.replaceChildren();
+  if(!Array.isArray(d)||!d.length){msg('Aucun résultat, réessayez.');return}
+  st.all=d.map(p=>'Jour '+p.day+' · '+p.platform+'\n'+p.text).join('\n\n');
+  d.forEach(p=>{const c=document.createElement('div');c.className='post';const h=document.createElement('span');h.className='tag';h.textContent='Jour '+p.day+' · '+p.platform;const t=document.createElement('p');t.textContent=p.text;const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent='Copier';b.addEventListener('click',()=>copy(p.text,b));c.append(h,t,b);out.append(c)});
+  $('#res').hidden=false;$('#res').scrollIntoView({behavior:'smooth'});
+}
+$('#all').addEventListener('click',e=>copy(st.all,e.target));
+
+function errText(status,code){
+  if(status===401)return'Votre session a expiré, reconnectez-vous.';
+  if(status===402)return'Vous avez utilisé vos '+LIM+' générations gratuites ce mois-ci. Le plan Premium arrive bientôt.';
+  if(status===429)return'Le service est très demandé, réessayez dans une minute.';
+  if(status===400)return code==='link'?'Le lien n’est pas valide : il doit commencer par http:// ou https://.':'Vérifiez le nom, la description et les plateformes.';
+  return'La génération a échoué, réessayez.';
+}
+
+$('#go').addEventListener('click',async()=>{
+  const name=$('#nom').value.trim(),desc=$('#desc').value.trim(),link=$('#lien').value.trim(),btn=$('#go');
+  if(!name||!desc){msg('Renseignez le nom et la description du produit.');return}
+  if(link&&!/^https?:\/\/\S+$/i.test(link)){msg('Le lien doit commencer par http:// ou https://');return}
+  if(!st.plats.size){msg('Choisissez au moins une plateforme.');return}
+  btn.disabled=true;msg('Génération en cours…');
+  try{
+    const {data}=await sb.auth.getSession();
+    if(!data.session){msg('Votre session a expiré, reconnectez-vous.');return}
+    const body={type:st.type,name:name,desc:desc,link:link,platforms:[...st.plats],days:Number($('#duree').value)};
+    if(st.photo){const im=await shrink(st.photo);if(im)body.image=im}
+    const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+data.session.access_token},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){msg(errText(r.status,j.error));if(r.status===402)loadQuota();return}
+    render(j.posts);msg('');loadQuota();
+  }catch(e){msg('Connexion impossible, vérifiez votre réseau et réessayez.')}
+  finally{btn.disabled=false}
+});
+</script>
+</body>
+</html>
