@@ -27,6 +27,19 @@ input[type=text],input[type=email],input[type=password],textarea,select,input[ty
 .post{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .post p{margin:0;white-space:pre-wrap}
 .tag{font-size:13px;font-weight:600;color:var(--acc)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.plan.prem{border:2px solid var(--acc)}
+.plan strong{font-family:'Space Grotesk',sans-serif;font-size:20px}
+.plan ul{margin:0;padding-left:18px;color:var(--mut)}
+.cur{font-size:13px;font-weight:600;color:var(--acc)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.step{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:12px;padding:16px}
+.num{width:32px;height:32px;border-radius:50%;background:var(--acc);color:var(--on);display:flex;align-items:center;justify-content:center;font-weight:700}
+.chk{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+details{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+summary{cursor:pointer;font-weight:600;min-height:24px}
+details p{margin:10px 0 0;color:var(--mut)}
 [hidden]{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -44,6 +57,19 @@ input[type=text],input[type=email],input[type=password],textarea,select,input[ty
 <p class="mut" id="amsg" role="status" aria-live="polite" style="margin:0"></p>
 </section>
 
+<div id="landing" style="display:flex;flex-direction:column;gap:20px">
+<section class="card"><h2>Comment ça marche</h2>
+<div class="steps">
+<div class="step"><span class="num">1</span><strong>Décrivez votre produit</strong><span class="mut">Nom, description, prix et public visé. Ajoutez une photo et le lien de votre produit si vous le souhaitez.</span></div>
+<div class="step"><span class="num">2</span><strong>Choisissez vos plateformes</strong><span class="mut">WhatsApp, Facebook, Instagram, TikTok : chaque publication est adaptée à la plateforme.</span></div>
+<div class="step"><span class="num">3</span><strong>Copiez et publiez</strong><span class="mut">Vous recevez un calendrier prêt à l’emploi. Copiez chaque publication et postez-la.</span></div>
+</div></section>
+<section class="card"><h2>Pour qui ?</h2>
+<p class="mut" style="margin:0">Pour tous ceux qui vendent en ligne et manquent de temps pour écrire leurs publications :</p>
+<ul class="chk"><li>Vendeurs d’ebooks, de formations et de produits numériques</li><li>Boutiques de vêtements, de cosmétiques et de produits du quotidien</li><li>Prestataires de services : coiffure, traiteur, couture, livraison</li><li>Personnes qui vendent depuis une page Facebook ou un statut WhatsApp</li></ul></section>
+<section class="card"><h2>Ce que vous obtenez</h2>
+<ul class="chk"><li>Des publications en français, au ton chaleureux et adaptées à chaque plateforme</li><li>Un calendrier sur plusieurs jours pour publier régulièrement</li><li>Le lien de votre produit ajouté dans chaque publication, si vous le souhaitez</li><li>Des textes plus précis grâce à la photo de votre produit</li><li>Une page simple, utilisable depuis un téléphone</li></ul></section>
+</div>
 <div id="app" hidden style="display:flex;flex-direction:column;gap:20px">
 <h1>Créer mes publications</h1>
 <p class="mut" id="left" style="margin:0"></p>
@@ -65,6 +91,26 @@ input[type=text],input[type=email],input[type=password],textarea,select,input[ty
 </section>
 <p class="mut">Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes.</p>
 </div>
+<section id="plans" class="card">
+<h2>Gratuit ou Premium</h2>
+<div class="plans">
+<div class="plan" id="p-free"><strong>Gratuit</strong><span>0 FCFA</span><span class="cur" hidden>Votre plan actuel</span>
+<ul><li>3 générations par mois</li><li>Calendrier de 7 jours</li><li>1 photo par génération</li><li>WhatsApp, Facebook, Instagram, TikTok</li></ul></div>
+<div class="plan prem" id="p-prem"><strong>Premium</strong><span>1 500 FCFA par mois</span><span class="cur" hidden>Votre plan actuel</span>
+<ul><li>Générations illimitées</li><li>Calendrier de 30 jours</li><li>Publication automatique sur Facebook et Instagram (bientôt)</li></ul>
+<button type="button" class="ghost" disabled>Bientôt disponible</button></div>
+</div>
+</section>
+<section class="card" id="faq"><h2>Questions fréquentes</h2>
+<details><summary>Vendio est-il vraiment gratuit ?</summary><p>Oui, le plan Gratuit ne demande ni paiement ni carte bancaire : vous avez 3 générations par mois. Le plan Premium (1 500 FCFA par mois) arrive bientôt pour aller plus loin.</p></details>
+<details><summary>Qu’est-ce qu’une génération ?</summary><p>Une génération, c’est un calendrier complet de publications pour un produit, sur les plateformes que vous avez choisies.</p></details>
+<details><summary>Vendio publie-t-il à ma place ?</summary><p>Pas encore. Pour l’instant, vous copiez les publications et vous les postez vous-même. La publication automatique sur Facebook et Instagram est prévue pour le plan Premium.</p></details>
+<details><summary>Pourquoi pas de publication automatique sur WhatsApp ?</summary><p>WhatsApp ne permet pas aux outils externes de publier des statuts automatiquement. Vendio prépare le message, et vous le publiez vous-même.</p></details>
+<details><summary>Les résultats sont-ils garantis ?</summary><p>Non. Vendio vous fait gagner du temps et vous donne des textes prêts à l’emploi, mais personne ne peut garantir des ventes. Relisez chaque publication et adaptez-la à votre style avant de la poster.</p></details>
+<details><summary>Que deviennent mes données ?</summary><p>Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes. N’y mettez pas d’informations personnelles ou confidentielles. Votre compte fonctionne avec votre adresse e-mail.</p></details>
+<details><summary>Comment payer le Premium ?</summary><p>Le paiement n’est pas encore ouvert. Les moyens de paiement seront annoncés sur cette page avant le lancement du Premium.</p></details>
+</section>
+<footer class="mut" style="text-align:center">Vendio · Des publications prêtes, pour vendre plus facilement</footer>
 </main>
 <script>
 const SB_URL='https://obwbkstxzdbtaqbuwloa.supabase.co';
@@ -83,7 +129,9 @@ async function refresh(){
   $('#auth').hidden=!!s;
   $('#app').hidden=!s;
   $('#out').hidden=!s;
+  $('#landing').hidden=!!s;
   $('#who').textContent=s?s.user.email:'';
+  if(!s)document.querySelectorAll('.cur').forEach(e=>{e.hidden=true});
   if(s)loadQuota();
 }
 sb.auth.onAuthStateChange(()=>setTimeout(refresh,0));
@@ -98,6 +146,8 @@ async function loadQuota(){
   st.plan=(p.data&&p.data.plan)||'free';
   st.used=(u.data&&u.data.count)||0;
   $('#o30').disabled=st.plan!=='premium';
+  $('#p-free .cur').hidden=st.plan==='premium';
+  $('#p-prem .cur').hidden=st.plan!=='premium';
   if(st.plan==='premium'){$('#left').textContent='Plan Premium';}
   else{const n=Math.max(0,LIM-st.used);$('#left').textContent=n+' génération'+(n>1?'s':'')+' gratuite'+(n>1?'s':'')+' restante'+(n>1?'s':'')+' ce mois-ci';}
 }
