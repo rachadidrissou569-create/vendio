@@ -80,13 +80,14 @@ details p{margin:10px 0 0;color:var(--mut)}
 <div class="f"><label for="photo">Photo du produit (facultatif)</label><input id="photo" type="file" accept="image/*"><span class="mut">1 photo par génération.</span></div>
 <div class="f"><label for="lien">Lien vers votre produit (facultatif)</label><input id="lien" type="text" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://..."><span class="mut">S’il est rempli, ce lien sera ajouté dans chaque publication.</span></div>
 <div class="f"><span class="lb">Plateformes</span><div class="row" id="plats"><button type="button" class="chip" aria-pressed="true">WhatsApp</button><button type="button" class="chip" aria-pressed="true">Facebook</button><button type="button" class="chip" aria-pressed="true">Instagram</button><button type="button" class="chip" aria-pressed="false">TikTok</button></div></div>
-<div class="f"><label for="duree">Durée du calendrier</label><select id="duree"><option value="7">7 jours</option><option value="30" id="o30" disabled>30 jours (Premium)</option></select></div>
+<div class="f"><label for="duree">Durée du calendrier</label><select id="duree"><option value="1">1 jour (une publication par plateforme)</option><option value="7" selected>7 jours</option><option value="30" id="o30" disabled>30 jours (Premium)</option></select><span class="mut">Pour une seule publication, choisissez « 1 jour » et une seule plateforme.</span></div>
 <button type="button" class="go" id="go">Générer mes publications</button>
+<button type="button" class="ghost" id="reset">Tout effacer et recommencer</button>
 <p class="mut" id="msg" role="status" aria-live="polite" style="margin:0"></p>
 </section>
 <section class="card" id="res" hidden>
 <h2>Mon calendrier</h2>
-<div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" disabled>Programmer · Premium</button></div>
+<div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" id="clr">Effacer les résultats</button><button type="button" class="ghost" disabled>Programmer · Premium</button></div>
 <div id="outp" class="f" style="gap:12px"></div>
 </section>
 <section class="card"><h2>Mes générations</h2><div id="hist" class="f" style="gap:12px"></div></section>
@@ -206,6 +207,13 @@ function render(d){
   $('#res').hidden=false;$('#res').scrollIntoView({behavior:'smooth'});
 }
 $('#all').addEventListener('click',e=>copy(st.all,e.target));
+function clearResults(){$('#outp').replaceChildren();$('#res').hidden=true;st.all='';msg('')}
+$('#clr').addEventListener('click',clearResults);
+$('#reset').addEventListener('click',()=>{
+  ['#nom','#desc','#lien'].forEach(s=>{$(s).value=''});
+  $('#photo').value='';st.photo=null;clearResults();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
 
 function errText(status,code){
   if(status===401)return'Votre session a expiré, reconnectez-vous.';
