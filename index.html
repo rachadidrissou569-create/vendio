@@ -68,7 +68,7 @@ details p{margin:10px 0 0;color:var(--mut)}
 <p class="mut" style="margin:0">Pour tous ceux qui vendent en ligne et manquent de temps pour écrire leurs publications :</p>
 <ul class="chk"><li>Vendeurs d’ebooks, de formations et de produits numériques</li><li>Boutiques de vêtements, de cosmétiques et de produits du quotidien</li><li>Prestataires de services : coiffure, traiteur, couture, livraison</li><li>Personnes qui vendent depuis une page Facebook ou un statut WhatsApp</li></ul></section>
 <section class="card"><h2>Ce que vous obtenez</h2>
-<ul class="chk"><li>Des publications en français, au ton chaleureux et adaptées à chaque plateforme</li><li>Un calendrier sur plusieurs jours pour publier régulièrement</li><li>Le lien de votre produit ajouté dans chaque publication, si vous le souhaitez</li><li>Des textes plus précis grâce à la photo de votre produit</li><li>Une page simple, utilisable depuis un téléphone</li></ul></section>
+<ul class="chk"><li>Des publications en français, au ton chaleureux et adaptées à chaque plateforme</li><li>Un calendrier sur plusieurs jours pour publier régulièrement</li><li>Le lien de votre produit ajouté dans chaque publication, si vous le souhaitez</li><li>Des textes plus précis grâce à la photo de votre produit</li><li>Une image prête à poster, avec votre photo, le nom, le prix et votre numéro WhatsApp</li><li>Une page simple, utilisable depuis un téléphone</li></ul></section>
 </div>
 <div id="app" hidden style="display:flex;flex-direction:column;gap:20px">
 <h1>Créer mes publications</h1>
@@ -79,11 +79,19 @@ details p{margin:10px 0 0;color:var(--mut)}
 <div class="f"><label for="desc">Description, prix et public visé</label><textarea id="desc" rows="4" maxlength="800" placeholder="Ex. : robes en pagne, de 8 000 à 15 000 FCFA, pour les femmes de 20 à 40 ans"></textarea></div>
 <div class="f"><label for="photo">Photo du produit (facultatif)</label><input id="photo" type="file" accept="image/*"><span class="mut">1 photo par génération.</span></div>
 <div class="f"><label for="lien">Lien vers votre produit (facultatif)</label><input id="lien" type="text" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://..."><span class="mut">S’il est rempli, ce lien sera ajouté dans chaque publication.</span></div>
+<div class="f"><label for="prix">Prix (facultatif, pour le visuel)</label><input id="prix" type="text" maxlength="40" autocomplete="off" placeholder="Ex. : 8 000 FCFA"></div>
+<div class="f"><label for="wa">Numéro WhatsApp (facultatif, pour le visuel)</label><input id="wa" type="text" inputmode="tel" maxlength="30" autocomplete="off" placeholder="Ex. : +229 00 00 00 00"></div>
 <div class="f"><span class="lb">Plateformes</span><div class="row" id="plats"><button type="button" class="chip" aria-pressed="true">WhatsApp</button><button type="button" class="chip" aria-pressed="true">Facebook</button><button type="button" class="chip" aria-pressed="true">Instagram</button><button type="button" class="chip" aria-pressed="false">TikTok</button></div></div>
 <div class="f"><label for="duree">Durée du calendrier</label><select id="duree"><option value="1">1 jour (une publication par plateforme)</option><option value="7" selected>7 jours</option><option value="30" id="o30" disabled>30 jours (Premium)</option></select><span class="mut">Pour une seule publication, choisissez « 1 jour » et une seule plateforme.</span></div>
 <button type="button" class="go" id="go">Générer mes publications</button>
 <button type="button" class="ghost" id="reset">Tout effacer et recommencer</button>
 <p class="mut" id="msg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+<section class="card"><h2>Visuel de publication</h2>
+<p class="mut" style="margin:0">Une image prête à poster avec votre photo, le nom, le prix et votre numéro WhatsApp. Elle est créée sur votre téléphone : la photo n’est pas envoyée pour cette image.</p>
+<div class="row" id="tpls"><button type="button" class="chip" aria-pressed="true">Nuit</button><button type="button" class="chip" aria-pressed="false">Chaleur</button><button type="button" class="chip" aria-pressed="false">Clair</button></div>
+<canvas id="poster" width="1080" height="1080" style="width:100%;height:auto;border-radius:12px;border:1px solid var(--line)"></canvas>
+<button type="button" class="go" id="dl">Télécharger l’image</button>
 </section>
 <section class="card" id="res" hidden>
 <h2>Mon calendrier</h2>
@@ -195,7 +203,42 @@ $('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').
 
 function chips(id,single){const bs=document.querySelectorAll('#'+id+' button');bs.forEach(b=>b.addEventListener('click',()=>{if(single){bs.forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.type=b.textContent}else{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));on?st.plats.add(b.textContent):st.plats.delete(b.textContent)}}))}
 chips('types',true);chips('plats',false);
-$('#photo').addEventListener('change',e=>{st.photo=e.target.files[0]||null});
+st.tpl='Nuit';st.img=null;
+const TPL={
+  'Nuit':{bg:'#0E1116',fg:'#F2F5F7',acc:'#3DDC84',on:'#08130C'},
+  'Chaleur':{bg:'#FFF6E9',fg:'#2B1B0E',acc:'#C2410C',on:'#FFFFFF'},
+  'Clair':{bg:'#FFFFFF',fg:'#14162B',acc:'#3B3FD9',on:'#FFFFFF'}
+};
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function wrap(c,t,x,y,mw,lh,max){const ws=t.split(/\s+/);let l='',n=0;for(const k of ws){const test=l?l+' '+k:k;if(c.measureText(test).width>mw&&l){c.fillText(l,x,y+n*lh);n++;l=k;if(n>=max)return}else l=test}c.fillText(l,x,y+n*lh)}
+function drawPoster(){
+  const cv=$('#poster'),c=cv.getContext('2d'),T=TPL[st.tpl];
+  const name=$('#nom').value.trim()||'Nom du produit',price=$('#prix').value.trim(),wa=$('#wa').value.trim();
+  c.clearRect(0,0,1080,1080);
+  c.fillStyle=T.bg;c.fillRect(0,0,1080,1080);
+  const x=60,y=60,w=960,h=640;
+  c.save();rr(c,x,y,w,h,36);c.clip();
+  c.textAlign='left';c.textBaseline='alphabetic';
+  if(st.img){const k=Math.max(w/st.img.width,h/st.img.height),iw=st.img.width*k,ih=st.img.height*k;c.drawImage(st.img,x+(w-iw)/2,y+(h-ih)/2,iw,ih)}
+  else{c.fillStyle=T.acc;c.fillRect(x,y,w,h);c.fillStyle=T.on;c.font='700 110px "Space Grotesk",sans-serif';wrap(c,name,x+60,y+200,w-120,130,3)}
+  c.restore();
+  c.textAlign='left';c.textBaseline='alphabetic';
+  if(st.img){c.fillStyle=T.fg;c.font='700 60px "Space Grotesk",sans-serif';wrap(c,name,60,790,960,70,2)}
+  if(price){c.font='700 48px "Space Grotesk",sans-serif';const tw=c.measureText(price).width;c.fillStyle=T.acc;rr(c,60,905,tw+64,88,44);c.fill();c.fillStyle=T.on;c.fillText(price,92,968)}
+  if(wa){c.font='600 38px Inter,sans-serif';c.fillStyle=T.fg;c.textAlign='right';c.fillText('WhatsApp : '+wa,1020,962)}
+}
+function loadImg(){
+  if(!st.photo){st.img=null;drawPoster();return}
+  const u=URL.createObjectURL(st.photo),im=new Image();
+  im.onload=()=>{st.img=im;URL.revokeObjectURL(u);drawPoster()};
+  im.onerror=()=>{st.img=null;URL.revokeObjectURL(u);drawPoster()};
+  im.src=u;
+}
+$('#photo').addEventListener('change',e=>{st.photo=e.target.files[0]||null;loadImg()});
+document.querySelectorAll('#tpls button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#tpls button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.tpl=b.textContent;drawPoster()}));
+['#nom','#prix','#wa'].forEach(s=>$(s).addEventListener('input',drawPoster));
+$('#dl').addEventListener('click',()=>{drawPoster();$('#poster').toBlob(b=>{if(!b)return;const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='vendio-visuel.png';document.body.append(a);a.click();a.remove()})});
+document.fonts.ready.then(drawPoster);
 
 function shrink(f){return new Promise(res=>{const im=new Image();const u=URL.createObjectURL(f);im.onload=()=>{const k=Math.min(1,1024/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({mime:'image/jpeg',data:c.toDataURL('image/jpeg',0.8).split(',')[1]})};im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u})}
 async function copy(t,b){const l=b.dataset.l||b.textContent;b.dataset.l=l;try{await navigator.clipboard.writeText(t);b.textContent='Copié'}catch(e){b.textContent='Copie impossible'}setTimeout(()=>{b.textContent=l},1500)}
@@ -210,7 +253,7 @@ $('#all').addEventListener('click',e=>copy(st.all,e.target));
 function clearResults(){$('#outp').replaceChildren();$('#res').hidden=true;st.all='';msg('')}
 $('#clr').addEventListener('click',clearResults);
 $('#reset').addEventListener('click',()=>{
-  ['#nom','#desc','#lien'].forEach(s=>{$(s).value=''});
+  ['#nom','#desc','#lien','#prix','#wa'].forEach(s=>{$(s).value=''});st.img=null;drawPoster();
   $('#photo').value='';st.photo=null;clearResults();
   window.scrollTo({top:0,behavior:'smooth'});
 });
