@@ -89,6 +89,7 @@ details p{margin:10px 0 0;color:var(--mut)}
 <div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" disabled>Programmer · Premium</button></div>
 <div id="outp" class="f" style="gap:12px"></div>
 </section>
+<section class="card"><h2>Mes générations</h2><div id="hist" class="f" style="gap:12px"></div></section>
 <p class="mut">Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes.</p>
 </div>
 <section id="plans" class="card">
@@ -132,11 +133,32 @@ async function refresh(){
   $('#landing').hidden=!!s;
   $('#who').textContent=s?s.user.email:'';
   if(!s)document.querySelectorAll('.cur').forEach(e=>{e.hidden=true});
-  if(s)loadQuota();
+  if(s){loadQuota();loadHistory();}
 }
 sb.auth.onAuthStateChange(()=>setTimeout(refresh,0));
 refresh();
 
+function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}
+async function saveGen(name,posts){
+  try{await sb.from('generations').insert({name:name,product_type:st.type,platforms:[...st.plats],posts:posts});loadHistory()}catch(e){}
+}
+async function loadHistory(){
+  const box=$('#hist');
+  const {data,error}=await sb.from('generations').select('id,name,created_at,platforms,posts').order('created_at',{ascending:false}).limit(20);
+  box.replaceChildren();
+  if(error){box.textContent='Historique indisponible pour le moment.';return}
+  if(!data||!data.length){box.textContent='Aucune génération pour l’instant.';return}
+  data.forEach(g=>{
+    const c=document.createElement('div');c.className='post';
+    const h=document.createElement('strong');h.textContent=g.name;
+    const m=document.createElement('span');m.className='mut';m.textContent=fmtDate(g.created_at)+' · '+(g.platforms||[]).join(', ');
+    const r=document.createElement('div');r.className='row';
+    const v=document.createElement('button');v.type='button';v.className='ghost';v.textContent='Voir';v.addEventListener('click',()=>render(g.posts));
+    const x=document.createElement('button');x.type='button';x.className='ghost';x.textContent='Supprimer';
+    x.addEventListener('click',async()=>{if(!confirm('Supprimer cette génération ?'))return;await sb.from('generations').delete().eq('id',g.id);loadHistory()});
+    r.append(v,x);c.append(h,m,r);box.append(c);
+  });
+}
 async function loadQuota(){
   const m=new Date().toISOString().slice(0,7);
   const [p,u]=await Promise.all([
@@ -168,7 +190,7 @@ $('#signup').addEventListener('click',async()=>{
   if(error){amsg(/registered|exists/i.test(error.message)?'Ce compte existe déjà, connectez-vous.':'Impossible de créer le compte : '+error.message);return}
   amsg(data.session?'':'Compte créé. Vérifiez votre boîte e-mail pour confirmer, puis connectez-vous.');
 });
-$('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true});
+$('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true;$('#hist').replaceChildren()});
 
 function chips(id,single){const bs=document.querySelectorAll('#'+id+' button');bs.forEach(b=>b.addEventListener('click',()=>{if(single){bs.forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.type=b.textContent}else{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));on?st.plats.add(b.textContent):st.plats.delete(b.textContent)}}))}
 chips('types',true);chips('plats',false);
@@ -207,7 +229,7 @@ $('#go').addEventListener('click',async()=>{
     const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+data.session.access_token},body:JSON.stringify(body)});
     const j=await r.json().catch(()=>({}));
     if(!r.ok){msg(errText(r.status,j.error));if(r.status===402)loadQuota();return}
-    render(j.posts);msg('');loadQuota();
+    render(j.posts);msg('');loadQuota();saveGen(name,j.posts);
   }catch(e){msg('Connexion impossible, vérifiez votre réseau et réessayez.')}
   finally{btn.disabled=false}
 });
