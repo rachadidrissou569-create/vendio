@@ -40,6 +40,7 @@ input[type=text],input[type=email],input[type=password],textarea,select,input[ty
 details{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 summary{cursor:pointer;font-weight:600;min-height:24px}
 details p{margin:10px 0 0;color:var(--mut)}
+.ed{width:100%;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px/1.5 Inter,sans-serif}
 [hidden]{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -53,8 +54,14 @@ details p{margin:10px 0 0;color:var(--mut)}
 <p class="mut" style="margin:0">Créez un compte gratuit pour générer des publications pour vos produits : ebooks, vêtements, services.</p>
 <div class="f"><label for="em">Adresse e-mail</label><input id="em" type="email" autocomplete="email"></div>
 <div class="f"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="current-password"></div>
-<div class="row"><button type="button" class="go" id="login">Se connecter</button><button type="button" class="ghost" id="signup">Créer un compte</button></div>
+<div class="row"><button type="button" class="go" id="login">Se connecter</button><button type="button" class="ghost" id="signup">Créer un compte</button><button type="button" class="ghost" id="forgot">Mot de passe oublié ?</button></div>
 <p class="mut" id="amsg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+<section id="recov" class="card" hidden>
+<h1>Nouveau mot de passe</h1>
+<div class="f"><label for="np">Nouveau mot de passe (8 caractères minimum)</label><input id="np" type="password" autocomplete="new-password"></div>
+<button type="button" class="go" id="np-go">Enregistrer</button>
+<p class="mut" id="rmsg" role="status" aria-live="polite" style="margin:0"></p>
 </section>
 
 <div id="landing" style="display:flex;flex-direction:column;gap:20px">
@@ -91,7 +98,7 @@ details p{margin:10px 0 0;color:var(--mut)}
 <p class="mut" style="margin:0">Une image prête à poster avec votre photo, le nom, le prix et votre numéro WhatsApp. Elle est créée sur votre téléphone : la photo n’est pas envoyée pour cette image.</p>
 <div class="row" id="tpls"><button type="button" class="chip" aria-pressed="true">Nuit</button><button type="button" class="chip" aria-pressed="false">Chaleur</button><button type="button" class="chip" aria-pressed="false">Clair</button></div>
 <canvas id="poster" width="1080" height="1080" style="width:100%;height:auto;border-radius:12px;border:1px solid var(--line)"></canvas>
-<button type="button" class="go" id="dl">Télécharger l’image</button>
+<div class="row"><button type="button" class="go" id="dl">Télécharger l’image</button><button type="button" class="ghost" id="shareimg">Partager l’image</button></div>
 </section>
 <section class="card" id="res" hidden>
 <h2>Mon calendrier</h2>
@@ -134,6 +141,8 @@ function amsg(t){$('#amsg').textContent=t}
 function msg(t){$('#msg').textContent=t}
 
 async function refresh(){
+  if(st.recov){['#auth','#app','#landing'].forEach(i=>{$(i).hidden=true});$('#recov').hidden=false;$('#out').hidden=true;return}
+  $('#recov').hidden=true;
   const {data}=await sb.auth.getSession();
   const s=data.session;
   $('#auth').hidden=!!s;
@@ -144,7 +153,7 @@ async function refresh(){
   if(!s)document.querySelectorAll('.cur').forEach(e=>{e.hidden=true});
   if(s){loadQuota();loadHistory();}
 }
-sb.auth.onAuthStateChange(()=>setTimeout(refresh,0));
+sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')st.recov=true;setTimeout(refresh,0)});
 refresh();
 
 function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}
@@ -201,6 +210,20 @@ $('#signup').addEventListener('click',async()=>{
 });
 $('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true;$('#hist').replaceChildren()});
 
+$('#forgot').addEventListener('click',async()=>{
+  const email=$('#em').value.trim();
+  if(!email){amsg('Écrivez d’abord votre adresse e-mail ci-dessus.');return}
+  amsg('Envoi du lien…');
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  amsg(error?'Impossible d’envoyer le lien pour le moment, réessayez plus tard.':'Si ce compte existe, un e-mail vient d’être envoyé. Ouvrez le lien qu’il contient.');
+});
+$('#np-go').addEventListener('click',async()=>{
+  const p=$('#np').value;
+  if(p.length<8){$('#rmsg').textContent='8 caractères minimum.';return}
+  const {error}=await sb.auth.updateUser({password:p});
+  if(error){$('#rmsg').textContent='Impossible de changer le mot de passe : '+error.message;return}
+  st.recov=false;$('#np').value='';$('#rmsg').textContent='';refresh();
+});
 function chips(id,single){const bs=document.querySelectorAll('#'+id+' button');bs.forEach(b=>b.addEventListener('click',()=>{if(single){bs.forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.type=b.textContent}else{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));on?st.plats.add(b.textContent):st.plats.delete(b.textContent)}}))}
 chips('types',true);chips('plats',false);
 st.tpl='Nuit';st.img=null;
@@ -238,6 +261,8 @@ $('#photo').addEventListener('change',e=>{st.photo=e.target.files[0]||null;loadI
 document.querySelectorAll('#tpls button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#tpls button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.tpl=b.textContent;drawPoster()}));
 ['#nom','#prix','#wa'].forEach(s=>$(s).addEventListener('input',drawPoster));
 $('#dl').addEventListener('click',()=>{drawPoster();$('#poster').toBlob(b=>{if(!b)return;const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='vendio-visuel.png';document.body.append(a);a.click();a.remove()})});
+if(!navigator.share)$('#shareimg').hidden=true;
+$('#shareimg').addEventListener('click',()=>{drawPoster();$('#poster').toBlob(async b=>{if(!b)return;const f=new File([b],'vendio-visuel.png',{type:'image/png'});try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});else{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='vendio-visuel.png';document.body.append(a);a.click();a.remove()}}catch(e){}})});
 document.fonts.ready.then(drawPoster);
 
 function shrink(f){return new Promise(res=>{const im=new Image();const u=URL.createObjectURL(f);im.onload=()=>{const k=Math.min(1,1024/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({mime:'image/jpeg',data:c.toDataURL('image/jpeg',0.8).split(',')[1]})};im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u})}
@@ -246,10 +271,20 @@ function render(d){
   const out=$('#outp');out.replaceChildren();
   if(!Array.isArray(d)||!d.length){msg('Aucun résultat, réessayez.');return}
   st.all=d.map(p=>'Jour '+p.day+' · '+p.platform+'\n'+p.text).join('\n\n');
-  d.forEach(p=>{const c=document.createElement('div');c.className='post';const h=document.createElement('span');h.className='tag';h.textContent='Jour '+p.day+' · '+p.platform;const t=document.createElement('p');t.textContent=p.text;const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent='Copier';b.addEventListener('click',()=>copy(p.text,b));c.append(h,t,b);out.append(c)});
+  d.forEach(p=>{
+    const c=document.createElement('div');c.className='post';c.style.width='100%';
+    const h=document.createElement('span');h.className='tag';h.textContent='Jour '+p.day+' · '+p.platform;
+    const t=document.createElement('textarea');t.className='ed';t.value=p.text;t.setAttribute('aria-label','Texte de la publication, modifiable');t.rows=Math.max(3,Math.ceil(p.text.length/36));
+    const r=document.createElement('div');r.className='row';
+    const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent='Copier';b.addEventListener('click',()=>copy(t.value,b));
+    r.append(b);
+    if(navigator.share){const s=document.createElement('button');s.type='button';s.className='ghost';s.textContent='Partager';s.addEventListener('click',()=>{navigator.share({text:t.value}).catch(()=>{})});r.append(s)}
+    c.append(h,t,r);out.append(c);
+  });
   $('#res').hidden=false;$('#res').scrollIntoView({behavior:'smooth'});
 }
-$('#all').addEventListener('click',e=>copy(st.all,e.target));
+function collect(){return [...document.querySelectorAll('#outp .post')].map(c=>c.querySelector('.tag').textContent+'\n'+c.querySelector('textarea').value).join('\n\n')}
+$('#all').addEventListener('click',e=>copy(collect(),e.target));
 function clearResults(){$('#outp').replaceChildren();$('#res').hidden=true;st.all='';msg('')}
 $('#clr').addEventListener('click',clearResults);
 $('#reset').addEventListener('click',()=>{
