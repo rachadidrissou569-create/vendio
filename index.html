@@ -80,6 +80,15 @@ details p{margin:10px 0 0;color:var(--mut)}
 <div id="app" hidden style="display:flex;flex-direction:column;gap:20px">
 <h1>Créer mes publications</h1>
 <p class="mut" id="left" style="margin:0"></p>
+<section class="card"><h2>Ma boutique</h2>
+<p class="mut" style="margin:0">Enregistrez ces informations une fois : elles servent pour vos visuels et pour le style de vos publications.</p>
+<div class="f"><label for="sname">Nom de la boutique</label><input id="sname" type="text" maxlength="60" autocomplete="off"></div>
+<div class="f"><label for="swa">Numéro WhatsApp</label><input id="swa" type="text" inputmode="tel" maxlength="30" autocomplete="off" placeholder="Ex. : +229 00 00 00 00"></div>
+<div class="f"><label for="stone">Style des publications</label><select id="stone"><option value="">Pas de préférence</option><option>Chaleureux et proche des clients</option><option>Professionnel et rassurant</option><option>Dynamique et enthousiaste</option><option>Simple et direct</option></select></div>
+<div class="f"><label for="slogo">Logo (facultatif)</label><input id="slogo" type="file" accept="image/*"><div class="row" style="align-items:center"><img id="lprev" alt="Aperçu du logo" width="64" height="64" hidden style="border-radius:50%;object-fit:cover"><button type="button" class="ghost" id="sdel">Retirer le logo</button></div></div>
+<button type="button" class="go" id="sshop">Enregistrer ma boutique</button>
+<p class="mut" id="smsg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
 <section class="card">
 <div class="f"><span class="lb">Type de produit</span><div class="row" id="types"><button type="button" class="chip" aria-pressed="true">Ebook</button><button type="button" class="chip" aria-pressed="false">Produit physique</button><button type="button" class="chip" aria-pressed="false">Service</button></div></div>
 <div class="f"><label for="nom">Nom du produit</label><input id="nom" type="text" maxlength="120" autocomplete="off"></div>
@@ -151,7 +160,7 @@ async function refresh(){
   $('#landing').hidden=!!s;
   $('#who').textContent=s?s.user.email:'';
   if(!s)document.querySelectorAll('.cur').forEach(e=>{e.hidden=true});
-  if(s){loadQuota();loadHistory();}
+  if(s){loadQuota();loadHistory();loadShop();}
 }
 sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')st.recov=true;setTimeout(refresh,0)});
 refresh();
@@ -208,7 +217,7 @@ $('#signup').addEventListener('click',async()=>{
   if(error){amsg(/registered|exists/i.test(error.message)?'Ce compte existe déjà, connectez-vous.':'Impossible de créer le compte : '+error.message);return}
   amsg(data.session?'':'Compte créé. Vérifiez votre boîte e-mail pour confirmer, puis connectez-vous.');
 });
-$('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true;$('#hist').replaceChildren()});
+$('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true;$('#hist').replaceChildren();st.shop={name:'',wa:'',tone:'',logo:''};st.logoImg=null;['#sname','#swa','#stone','#wa'].forEach(s=>{$(s).value=''});$('#lprev').hidden=true;drawPoster()});
 
 $('#forgot').addEventListener('click',async()=>{
   const email=$('#em').value.trim();
@@ -245,6 +254,7 @@ function drawPoster(){
   if(st.img){const k=Math.max(w/st.img.width,h/st.img.height),iw=st.img.width*k,ih=st.img.height*k;c.drawImage(st.img,x+(w-iw)/2,y+(h-ih)/2,iw,ih)}
   else{c.fillStyle=T.acc;c.fillRect(x,y,w,h);c.fillStyle=T.on;c.font='700 110px "Space Grotesk",sans-serif';wrap(c,name,x+60,y+200,w-120,130,3)}
   c.restore();
+  drawBrand(c,T);
   c.textAlign='left';c.textBaseline='alphabetic';
   if(st.img){c.fillStyle=T.fg;c.font='700 60px "Space Grotesk",sans-serif';wrap(c,name,60,790,960,70,2)}
   if(price){c.font='700 48px "Space Grotesk",sans-serif';const tw=c.measureText(price).width;c.fillStyle=T.acc;rr(c,60,905,tw+64,88,44);c.fill();c.fillStyle=T.on;c.fillText(price,92,968)}
@@ -257,6 +267,51 @@ function loadImg(){
   im.onerror=()=>{st.img=null;URL.revokeObjectURL(u);drawPoster()};
   im.src=u;
 }
+st.shop={name:'',wa:'',tone:'',logo:''};st.logoImg=null;
+function drawBrand(c,T){
+  const sn=st.shop.name,lg=st.logoImg;
+  if(!sn&&!lg)return;
+  c.save();c.font='600 34px Inter,sans-serif';
+  const tw=sn?c.measureText(sn).width:0,size=76,pad=14;
+  const w=(lg?size:0)+(sn?tw+(lg?16:0):0)+pad*2,h=size+pad*2;
+  c.globalAlpha=0.92;c.fillStyle=T.bg;rr(c,84,84,w,h,h/2);c.fill();c.globalAlpha=1;
+  let x=84+pad;
+  if(lg){c.save();c.beginPath();c.arc(x+size/2,84+pad+size/2,size/2,0,Math.PI*2);c.clip();c.drawImage(lg,x,84+pad,size,size);c.restore();x+=size+16}
+  if(sn){c.fillStyle=T.fg;c.textAlign='left';c.textBaseline='middle';c.fillText(sn,x,84+h/2)}
+  c.restore();
+}
+function setLogo(src){
+  if(!src){st.logoImg=null;$('#lprev').hidden=true;drawPoster();return}
+  const im=new Image();
+  im.onload=()=>{st.logoImg=im;$('#lprev').src=src;$('#lprev').hidden=false;drawPoster()};
+  im.onerror=()=>{st.logoImg=null;drawPoster()};
+  im.src=src;
+}
+async function loadShop(){
+  const {data}=await sb.from('shops').select('shop_name,whatsapp,tone,logo').maybeSingle();
+  const s=data||{};
+  st.shop={name:s.shop_name||'',wa:s.whatsapp||'',tone:s.tone||'',logo:s.logo||''};
+  $('#sname').value=st.shop.name;$('#swa').value=st.shop.wa;$('#stone').value=st.shop.tone;
+  if(!$('#wa').value&&st.shop.wa)$('#wa').value=st.shop.wa;
+  setLogo(st.shop.logo);
+}
+$('#sname').addEventListener('input',e=>{st.shop.name=e.target.value.trim();drawPoster()});
+$('#slogo').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const u=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{const k=Math.min(im.width,im.height),cv=document.createElement('canvas');cv.width=cv.height=256;const x=cv.getContext('2d');x.fillStyle='#FFFFFF';x.fillRect(0,0,256,256);x.drawImage(im,(im.width-k)/2,(im.height-k)/2,k,k,0,0,256,256);URL.revokeObjectURL(u);st.shop.logo=cv.toDataURL('image/jpeg',0.85);setLogo(st.shop.logo)};
+  im.onerror=()=>{URL.revokeObjectURL(u)};
+  im.src=u;
+});
+$('#sdel').addEventListener('click',()=>{st.shop.logo='';$('#slogo').value='';setLogo('')});
+$('#sshop').addEventListener('click',async()=>{
+  const {data}=await sb.auth.getSession();
+  if(!data.session)return;
+  const row={user_id:data.session.user.id,shop_name:$('#sname').value.trim().slice(0,60),whatsapp:$('#swa').value.trim().slice(0,30),tone:$('#stone').value,logo:st.shop.logo||null,updated_at:new Date().toISOString()};
+  const {error}=await sb.from('shops').upsert(row);
+  $('#smsg').textContent=error?'Enregistrement impossible, réessayez.':'Boutique enregistrée.';
+  if(!error){st.shop.name=row.shop_name;st.shop.wa=row.whatsapp;st.shop.tone=row.tone;if(!$('#wa').value&&row.whatsapp)$('#wa').value=row.whatsapp;drawPoster()}
+});
 $('#photo').addEventListener('change',e=>{st.photo=e.target.files[0]||null;loadImg()});
 document.querySelectorAll('#tpls button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#tpls button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.tpl=b.textContent;drawPoster()}));
 ['#nom','#prix','#wa'].forEach(s=>$(s).addEventListener('input',drawPoster));
@@ -310,7 +365,9 @@ $('#go').addEventListener('click',async()=>{
   try{
     const {data}=await sb.auth.getSession();
     if(!data.session){msg('Votre session a expiré, reconnectez-vous.');return}
-    const body={type:st.type,name:name,desc:desc,link:link,platforms:[...st.plats],days:Number($('#duree').value)};
+    const extra=[st.shop.name?'Boutique : '+st.shop.name:'',$('#stone').value?'Style souhaité : '+$('#stone').value:''].filter(Boolean).join('. ');
+    const fullDesc=((extra?extra+'. ':'')+desc).slice(0,800);
+    const body={type:st.type,name:name,desc:fullDesc,link:link,platforms:[...st.plats],days:Number($('#duree').value)};
     if(st.photo){const im=await shrink(st.photo);if(im)body.image=im}
     const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+data.session.access_token},body:JSON.stringify(body)});
     const j=await r.json().catch(()=>({}));
