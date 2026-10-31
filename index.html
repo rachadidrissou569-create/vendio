@@ -7,7 +7,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
 <style>
 :root{--bg:#0E1116;--fg:#F2F5F7;--mut:#A8B3BF;--card:#171C24;--line:#2A323D;--acc:#3DDC84;--on:#08130C;color-scheme:dark}
-@media (prefers-color-scheme: light){:root{--bg:#F6F8FA;--fg:#14181F;--mut:#4B5663;--card:#FFFFFF;--line:#D5DBE2;--acc:#0F7B43;--on:#FFFFFF;color-scheme:light}}
+@media (prefers-color-scheme: light){:root:not([data-theme]){--bg:#F6F8FA;--fg:#14181F;--mut:#4B5663;--card:#FFFFFF;--line:#D5DBE2;--acc:#0F7B43;--on:#FFFFFF;color-scheme:light}}
+:root[data-theme="light"]{--bg:#F6F8FA;--fg:#14181F;--mut:#4B5663;--card:#FFFFFF;--line:#D5DBE2;--acc:#0F7B43;--on:#FFFFFF;color-scheme:light}
+:root[data-theme="dark"]{--bg:#0E1116;--fg:#F2F5F7;--mut:#A8B3BF;--card:#171C24;--line:#2A323D;--acc:#3DDC84;--on:#08130C;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Inter,sans-serif}
 main{max-width:720px;margin:0 auto;padding:20px 16px 56px;display:flex;flex-direction:column;gap:20px}
@@ -47,7 +49,7 @@ details p{margin:10px 0 0;color:var(--mut)}
 </head>
 <body>
 <main>
-<header><span class="logo">Vendio</span><span class="row" style="align-items:center"><span class="mut" id="who"></span><button type="button" class="ghost" id="out" hidden>Se déconnecter</button></span></header>
+<header><span class="logo">Vendio</span><span class="row" style="align-items:center"><span class="mut" id="who"></span><button type="button" class="ghost" id="theme">Thème : Auto</button><button type="button" class="ghost" id="out" hidden>Se déconnecter</button></span></header>
 
 <section id="auth" class="card">
 <h1>Vos publications, prêtes en quelques secondes</h1>
@@ -219,6 +221,26 @@ $('#signup').addEventListener('click',async()=>{
 });
 $('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true;$('#hist').replaceChildren();st.shop={name:'',wa:'',tone:'',logo:''};st.logoImg=null;['#sname','#swa','#stone','#wa'].forEach(s=>{$(s).value=''});$('#lprev').hidden=true;drawPoster()});
 
+function applyTheme(t){
+  const r=document.documentElement;
+  if(t==='dark'||t==='light')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme');
+  $('#theme').textContent='Thème : '+(t==='dark'?'Sombre':t==='light'?'Clair':'Auto');
+}
+let th='auto';
+try{th=localStorage.getItem('vendio_theme')||'auto'}catch(e){}
+applyTheme(th);
+$('#theme').addEventListener('click',()=>{
+  th=th==='auto'?'dark':th==='dark'?'light':'auto';
+  try{localStorage.setItem('vendio_theme',th)}catch(e){}
+  applyTheme(th);
+});
+function setMode(m){
+  $('#login').className=m==='login'?'go':'ghost';
+  $('#signup').className=m==='signup'?'go':'ghost';
+  $('#pw').autocomplete=m==='signup'?'new-password':'current-password';
+}
+$('#login').addEventListener('click',()=>setMode('login'));
+$('#signup').addEventListener('click',()=>setMode('signup'));
 $('#forgot').addEventListener('click',async()=>{
   const email=$('#em').value.trim();
   if(!email){amsg('Écrivez d’abord votre adresse e-mail ci-dessus.');return}
