@@ -42,6 +42,7 @@ input[type=text],input[type=email],input[type=password],textarea,select,input[ty
 details{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 summary{cursor:pointer;font-weight:600;min-height:24px}
 details p{margin:10px 0 0;color:var(--mut)}
+input[type=datetime-local]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px Inter,sans-serif;min-height:44px}
 .ed{width:100%;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px/1.5 Inter,sans-serif}
 [hidden]{display:none!important}
 </style>
@@ -113,7 +114,7 @@ details p{margin:10px 0 0;color:var(--mut)}
 </section>
 <section class="card" id="res" hidden>
 <h2>Mon calendrier</h2>
-<div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" id="clr">Effacer les résultats</button><button type="button" class="ghost" disabled>Programmer · Premium</button></div>
+<div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" id="clr">Effacer les résultats</button></div>
 <div id="outp" class="f" style="gap:12px"></div>
 </section>
 <section class="card"><h2>Mes générations</h2><div id="hist" class="f" style="gap:12px"></div></section>
@@ -124,15 +125,14 @@ details p{margin:10px 0 0;color:var(--mut)}
 <div class="plans">
 <div class="plan" id="p-free"><strong>Gratuit</strong><span>0 FCFA</span><span class="cur" hidden>Votre plan actuel</span>
 <ul><li>3 générations par mois</li><li>Calendrier de 7 jours</li><li>1 photo par génération</li><li>WhatsApp, Facebook, Instagram, TikTok</li></ul></div>
-<div class="plan prem" id="p-prem"><strong>Premium</strong><span>1 500 FCFA par mois</span><span class="cur" hidden>Votre plan actuel</span>
-<ul><li>Générations illimitées</li><li>Calendrier de 30 jours</li><li>Publication automatique sur Facebook et Instagram (bientôt)</li></ul>
-<button type="button" class="ghost" disabled>Bientôt disponible</button></div>
+<div class="plan prem" id="p-prem"><strong>Premium</strong><span>600 FCFA par mois</span><span class="cur" hidden>Votre plan actuel</span>
+<ul><li>60 générations par mois</li><li>Calendrier de 30 jours</li><li>Rappels de publication dans votre calendrier</li></ul></div>
 </div>
 </section>
 <section class="card" id="faq"><h2>Questions fréquentes</h2>
-<details><summary>Vendio est-il vraiment gratuit ?</summary><p>Oui, le plan Gratuit ne demande ni paiement ni carte bancaire : vous avez 3 générations par mois. Le plan Premium (1 500 FCFA par mois) arrive bientôt pour aller plus loin.</p></details>
+<details><summary>Vendio est-il vraiment gratuit ?</summary><p>Oui, le plan Gratuit ne demande ni paiement ni carte bancaire : vous avez 3 générations par mois. Le plan Premium (600 FCFA par mois) permet d’aller plus loin : plus de générations, des calendriers de 30 jours et des rappels de publication.</p></details>
 <details><summary>Qu’est-ce qu’une génération ?</summary><p>Une génération, c’est un calendrier complet de publications pour un produit, sur les plateformes que vous avez choisies.</p></details>
-<details><summary>Vendio publie-t-il à ma place ?</summary><p>Pas encore. Pour l’instant, vous copiez les publications et vous les postez vous-même. La publication automatique sur Facebook et Instagram est prévue pour le plan Premium.</p></details>
+<details><summary>Vendio publie-t-il à ma place ?</summary><p>Non, c’est vous qui postez, mais Vendio vous facilite la tâche : vous copiez ou partagez chaque publication en un geste. Avec le plan Premium, vous pouvez aussi programmer un rappel : votre téléphone vous prévient à l’heure choisie, avec le texte prêt à publier.</p></details>
 <details><summary>Pourquoi pas de publication automatique sur WhatsApp ?</summary><p>WhatsApp ne permet pas aux outils externes de publier des statuts automatiquement. Vendio prépare le message, et vous le publiez vous-même.</p></details>
 <details><summary>Les résultats sont-ils garantis ?</summary><p>Non. Vendio vous fait gagner du temps et vous donne des textes prêts à l’emploi, mais personne ne peut garantir des ventes. Relisez chaque publication et adaptez-la à votre style avant de la poster.</p></details>
 <details><summary>Que deviennent mes données ?</summary><p>Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes. N’y mettez pas d’informations personnelles ou confidentielles. Votre compte fonctionne avec votre adresse e-mail.</p></details>
@@ -356,7 +356,24 @@ function render(d){
     const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent='Copier';b.addEventListener('click',()=>copy(t.value,b));
     r.append(b);
     if(navigator.share){const s=document.createElement('button');s.type='button';s.className='ghost';s.textContent='Partager';s.addEventListener('click',()=>{navigator.share({text:t.value}).catch(()=>{})});r.append(s)}
-    c.append(h,t,r);out.append(c);
+    const rb=document.createElement('button');rb.type='button';rb.className='ghost';rb.textContent='Programmer un rappel';
+    const rp=document.createElement('div');rp.className='row';rp.hidden=true;rp.style.alignItems='center';
+    const di=document.createElement('input');di.type='datetime-local';di.setAttribute('aria-label','Date et heure du rappel');
+    const ok=document.createElement('button');ok.type='button';ok.className='go';ok.textContent='Créer le rappel';
+    const note=document.createElement('span');note.className='mut';
+    rp.append(di,ok,note);
+    rb.addEventListener('click',()=>{
+      const prem=st.plan==='premium';
+      rp.hidden=!rp.hidden;di.hidden=!prem;ok.hidden=!prem;
+      note.textContent=prem?'Votre téléphone ajoutera le rappel à votre calendrier.':'Les rappels de publication sont réservés au plan Premium.';
+    });
+    ok.addEventListener('click',()=>{
+      if(!di.value){note.textContent='Choisissez une date et une heure.';return}
+      makeReminder('Publier sur '+p.platform+' · Vendio',t.value,di.value);
+      note.textContent='Rappel créé : ouvrez le fichier téléchargé pour l’ajouter à votre calendrier.';
+    });
+    r.append(rb);
+    c.append(h,t,r,rp);out.append(c);
   });
   $('#res').hidden=false;$('#res').scrollIntoView({behavior:'smooth'});
 }
@@ -370,6 +387,15 @@ $('#reset').addEventListener('click',()=>{
   window.scrollTo({top:0,behavior:'smooth'});
 });
 
+function icsEsc(t){return t.replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n')}
+function icsFold(l){const o=[];while(l.length>60){o.push(l.slice(0,60));l=' '+l.slice(60)}o.push(l);return o.join('\r\n')}
+function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'')}
+function makeReminder(title,text,when){
+  const s=new Date(when),e=new Date(s.getTime()+15*60000);
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Vendio//FR','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+Date.now()+'-'+Math.random().toString(36).slice(2)+'@vendio','DTSTAMP:'+icsDate(new Date()),'DTSTART:'+icsDate(s),'DTEND:'+icsDate(e),'SUMMARY:'+icsEsc(title),'DESCRIPTION:'+icsEsc(text),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(title),'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'];
+  const blob=new Blob([lines.map(icsFold).join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rappel-vendio.ics';document.body.append(a);a.click();a.remove();
+}
 function errText(status,code){
   if(status===401)return'Votre session a expiré, reconnectez-vous.';
   if(status===402)return'Vous avez utilisé vos '+LIM+' générations gratuites ce mois-ci. Le plan Premium arrive bientôt.';
