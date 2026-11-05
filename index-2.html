@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendio – Vos publications en quelques secondes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0E1116;--fg:#F2F5F7;--mut:#A8B3BF;--card:#171C24;--line:#2A323D;--acc:#3DDC84;--on:#08130C;color-scheme:dark}
+@media (prefers-color-scheme: light){:root:not([data-theme]){--bg:#F6F8FA;--fg:#14181F;--mut:#4B5663;--card:#FFFFFF;--line:#D5DBE2;--acc:#0F7B43;--on:#FFFFFF;color-scheme:light}}
+:root[data-theme="light"]{--bg:#F6F8FA;--fg:#14181F;--mut:#4B5663;--card:#FFFFFF;--line:#D5DBE2;--acc:#0F7B43;--on:#FFFFFF;color-scheme:light}
+:root[data-theme="dark"]{--bg:#0E1116;--fg:#F2F5F7;--mut:#A8B3BF;--card:#171C24;--line:#2A323D;--acc:#3DDC84;--on:#08130C;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Inter,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 56px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1,h2,.logo{font-family:'Space Grotesk',sans-serif;margin:0}
+.logo{font-size:26px;font-weight:700}h1{font-size:32px;line-height:1.15}h2{font-size:20px}
+.mut{color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.f{display:flex;flex-direction:column;gap:8px}
+label,.lb{font-size:14px;font-weight:600;color:var(--mut)}
+input[type=text],input[type=email],input[type=password],textarea,select,input[type=file]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px Inter,sans-serif;min-height:44px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chip,.ghost,.go{min-height:44px;padding:10px 18px;border-radius:999px;font:500 15px Inter,sans-serif;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--fg)}
+.chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:600}
+.go{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700;font-size:16px;min-height:48px}
+.go:disabled,.ghost:disabled{opacity:.55;cursor:not-allowed}
+.post{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.post p{margin:0;white-space:pre-wrap}
+.tag{font-size:13px;font-weight:600;color:var(--acc)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.plan.prem{border:2px solid var(--acc)}
+.plan strong{font-family:'Space Grotesk',sans-serif;font-size:20px}
+.plan ul{margin:0;padding-left:18px;color:var(--mut)}
+.cur{font-size:13px;font-weight:600;color:var(--acc)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.step{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:12px;padding:16px}
+.num{width:32px;height:32px;border-radius:50%;background:var(--acc);color:var(--on);display:flex;align-items:center;justify-content:center;font-weight:700}
+.chk{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+details{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+summary{cursor:pointer;font-weight:600;min-height:24px}
+details p{margin:10px 0 0;color:var(--mut)}
+input[type=datetime-local]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px Inter,sans-serif;min-height:44px}
+.ed{width:100%;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:16px/1.5 Inter,sans-serif}
+[hidden]{display:none!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<main>
+<header><span class="logo">Vendio</span><span class="row" style="align-items:center"><span class="mut" id="who"></span><button type="button" class="ghost" id="theme">Thème : Auto</button><button type="button" class="ghost" id="out" hidden>Se déconnecter</button></span></header>
+
+<section id="auth" class="card">
+<h1>Vos publications, prêtes en quelques secondes</h1>
+<p class="mut" style="margin:0">Créez un compte gratuit pour générer des publications pour vos produits : ebooks, vêtements, services.</p>
+<div class="f"><label for="em">Adresse e-mail</label><input id="em" type="email" autocomplete="email"></div>
+<div class="f"><label for="pw">Mot de passe (8 caractères minimum)</label><input id="pw" type="password" autocomplete="current-password"></div>
+<div class="row"><button type="button" class="go" id="login">Se connecter</button><button type="button" class="ghost" id="signup">Créer un compte</button><button type="button" class="ghost" id="forgot">Mot de passe oublié ?</button></div>
+<p class="mut" id="amsg" role="status" aria-live="polite" style="margin:0"></p>
+<p class="mut" style="margin:0">En créant un compte, vous acceptez les <a href="conditions.html" style="color:var(--acc)">Conditions d’utilisation</a> et la <a href="confidentialite.html" style="color:var(--acc)">Politique de confidentialité</a>.</p>
+</section>
+<section id="recov" class="card" hidden>
+<h1>Nouveau mot de passe</h1>
+<div class="f"><label for="np">Nouveau mot de passe (8 caractères minimum)</label><input id="np" type="password" autocomplete="new-password"></div>
+<button type="button" class="go" id="np-go">Enregistrer</button>
+<p class="mut" id="rmsg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+
+<div id="landing" style="display:flex;flex-direction:column;gap:20px">
+<section class="card"><h2>Comment ça marche</h2>
+<div class="steps">
+<div class="step"><span class="num">1</span><strong>Décrivez votre produit</strong><span class="mut">Nom, description, prix et public visé. Ajoutez une photo et le lien de votre produit si vous le souhaitez.</span></div>
+<div class="step"><span class="num">2</span><strong>Choisissez vos plateformes</strong><span class="mut">WhatsApp, Facebook, Instagram, TikTok : chaque publication est adaptée à la plateforme.</span></div>
+<div class="step"><span class="num">3</span><strong>Copiez et publiez</strong><span class="mut">Vous recevez un calendrier prêt à l’emploi. Copiez chaque publication et postez-la.</span></div>
+</div></section>
+<section class="card"><h2>Pour qui ?</h2>
+<p class="mut" style="margin:0">Pour tous ceux qui vendent en ligne et manquent de temps pour écrire leurs publications :</p>
+<ul class="chk"><li>Vendeurs d’ebooks, de formations et de produits numériques</li><li>Boutiques de vêtements, de cosmétiques et de produits du quotidien</li><li>Prestataires de services : coiffure, traiteur, couture, livraison</li><li>Personnes qui vendent depuis une page Facebook ou un statut WhatsApp</li></ul></section>
+<section class="card"><h2>Ce que vous obtenez</h2>
+<ul class="chk"><li>Des publications en français, au ton chaleureux et adaptées à chaque plateforme</li><li>Un calendrier sur plusieurs jours pour publier régulièrement</li><li>Le lien de votre produit ajouté dans chaque publication, si vous le souhaitez</li><li>Des textes plus précis grâce à la photo de votre produit</li><li>Une image prête à poster, avec votre photo, le nom, le prix et votre numéro WhatsApp</li><li>Une page simple, utilisable depuis un téléphone</li></ul></section>
+</div>
+<div id="app" hidden style="display:flex;flex-direction:column;gap:20px">
+<h1>Créer mes publications</h1>
+<p class="mut" id="left" style="margin:0"></p>
+<section class="card"><h2>Ma boutique</h2>
+<p class="mut" style="margin:0">Enregistrez ces informations une fois : elles servent pour vos visuels et pour le style de vos publications.</p>
+<div class="f"><label for="sname">Nom de la boutique</label><input id="sname" type="text" maxlength="60" autocomplete="off"></div>
+<div class="f"><label for="swa">Numéro WhatsApp</label><input id="swa" type="text" inputmode="tel" maxlength="30" autocomplete="off" placeholder="Ex. : +229 00 00 00 00"></div>
+<div class="f"><label for="stone">Style des publications</label><select id="stone"><option value="">Pas de préférence</option><option>Chaleureux et proche des clients</option><option>Professionnel et rassurant</option><option>Dynamique et enthousiaste</option><option>Simple et direct</option></select></div>
+<div class="f"><label for="slogo">Logo (facultatif)</label><input id="slogo" type="file" accept="image/*"><div class="row" style="align-items:center"><img id="lprev" alt="Aperçu du logo" width="64" height="64" hidden style="border-radius:50%;object-fit:cover"><button type="button" class="ghost" id="sdel">Retirer le logo</button></div></div>
+<button type="button" class="go" id="sshop">Enregistrer ma boutique</button>
+<p class="mut" id="smsg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+<section class="card">
+<div class="f"><span class="lb">Type de produit</span><div class="row" id="types"><button type="button" class="chip" aria-pressed="true">Ebook</button><button type="button" class="chip" aria-pressed="false">Produit physique</button><button type="button" class="chip" aria-pressed="false">Service</button></div></div>
+<div class="f"><label for="nom">Nom du produit</label><input id="nom" type="text" maxlength="120" autocomplete="off"></div>
+<div class="f"><label for="desc">Description, prix et public visé</label><textarea id="desc" rows="4" maxlength="800" placeholder="Ex. : robes en pagne, de 8 000 à 15 000 FCFA, pour les femmes de 20 à 40 ans"></textarea></div>
+<div class="f"><label for="photo">Photo du produit (facultatif)</label><input id="photo" type="file" accept="image/*"><span class="mut">1 photo par génération.</span></div>
+<div class="f"><label for="lien">Lien vers votre produit (facultatif)</label><input id="lien" type="text" inputmode="url" maxlength="300" autocomplete="off" placeholder="https://..."><span class="mut">S’il est rempli, ce lien sera ajouté dans chaque publication.</span></div>
+<div class="f"><label for="prix">Prix (facultatif, pour le visuel)</label><input id="prix" type="text" maxlength="40" autocomplete="off" placeholder="Ex. : 8 000 FCFA"></div>
+<div class="f"><label for="wa">Numéro WhatsApp (facultatif, pour le visuel)</label><input id="wa" type="text" inputmode="tel" maxlength="30" autocomplete="off" placeholder="Ex. : +229 00 00 00 00"></div>
+<div class="f"><span class="lb">Plateformes</span><div class="row" id="plats"><button type="button" class="chip" aria-pressed="true">WhatsApp</button><button type="button" class="chip" aria-pressed="true">Facebook</button><button type="button" class="chip" aria-pressed="true">Instagram</button><button type="button" class="chip" aria-pressed="false">TikTok</button></div></div>
+<div class="f"><label for="duree">Durée du calendrier</label><select id="duree"><option value="1">1 jour (une publication par plateforme)</option><option value="7" selected>7 jours</option><option value="30" id="o30" disabled>30 jours (Premium)</option></select><span class="mut">Pour une seule publication, choisissez « 1 jour » et une seule plateforme.</span></div>
+<button type="button" class="go" id="go">Générer mes publications</button>
+<button type="button" class="ghost" id="reset">Tout effacer et recommencer</button>
+<p class="mut" id="msg" role="status" aria-live="polite" style="margin:0"></p>
+</section>
+<section class="card"><h2>Visuel de publication</h2>
+<p class="mut" style="margin:0">Une image prête à poster avec votre photo, le nom, le prix et votre numéro WhatsApp. Elle est créée sur votre téléphone : la photo n’est pas envoyée pour cette image.</p>
+<div class="row" id="tpls"><button type="button" class="chip" aria-pressed="true">Nuit</button><button type="button" class="chip" aria-pressed="false">Chaleur</button><button type="button" class="chip" aria-pressed="false">Clair</button></div>
+<canvas id="poster" width="1080" height="1080" style="width:100%;height:auto;border-radius:12px;border:1px solid var(--line)"></canvas>
+<div class="row"><button type="button" class="go" id="dl">Télécharger l’image</button><button type="button" class="ghost" id="shareimg">Partager l’image</button></div>
+</section>
+<section class="card" id="res" hidden>
+<h2>Mon calendrier</h2>
+<div class="row"><button type="button" class="ghost" id="all">Tout copier</button><button type="button" class="ghost" id="clr">Effacer les résultats</button></div>
+<div id="outp" class="f" style="gap:12px"></div>
+</section>
+<section class="card"><h2>Mes générations</h2><div id="hist" class="f" style="gap:12px"></div></section>
+<p class="mut">Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes.</p>
+</div>
+<section id="plans" class="card">
+<h2>Gratuit ou Premium</h2>
+<div class="plans">
+<div class="plan" id="p-free"><strong>Gratuit</strong><span>0 FCFA</span><span class="cur" hidden>Votre plan actuel</span>
+<ul><li>3 générations par mois</li><li>Calendrier de 7 jours</li><li>1 photo par génération</li><li>WhatsApp, Facebook, Instagram, TikTok</li></ul></div>
+<div class="plan prem" id="p-prem"><strong>Premium</strong><span>600 FCFA par mois</span><span class="cur" hidden>Votre plan actuel</span>
+<ul><li>60 générations par mois</li><li>Calendrier de 30 jours</li><li>Rappels de publication dans votre calendrier</li></ul>
+<span class="mut">Paiement par Mobile Money ou carte, via SasPay. Valable 30 jours, à renouveler quand vous le souhaitez.</span>
+<button type="button" class="go" id="sub">S’abonner · 600 FCFA pour 30 jours</button>
+<button type="button" class="ghost" id="vpay">Vérifier mon paiement</button>
+<p class="mut" id="submsg" role="status" aria-live="polite" style="margin:0"></p></div>
+</div>
+</section>
+<section class="card" id="faq"><h2>Questions fréquentes</h2>
+<details><summary>Vendio est-il vraiment gratuit ?</summary><p>Oui, le plan Gratuit ne demande ni paiement ni carte bancaire : vous avez 3 générations par mois. Le plan Premium (600 FCFA par mois) permet d’aller plus loin : plus de générations, des calendriers de 30 jours et des rappels de publication.</p></details>
+<details><summary>Qu’est-ce qu’une génération ?</summary><p>Une génération, c’est un calendrier complet de publications pour un produit, sur les plateformes que vous avez choisies.</p></details>
+<details><summary>Vendio publie-t-il à ma place ?</summary><p>Non, c’est vous qui postez, mais Vendio vous facilite la tâche : vous copiez ou partagez chaque publication en un geste. Avec le plan Premium, vous pouvez aussi programmer un rappel : votre téléphone vous prévient à l’heure choisie, avec le texte prêt à publier.</p></details>
+<details><summary>Pourquoi pas de publication automatique sur WhatsApp ?</summary><p>WhatsApp ne permet pas aux outils externes de publier des statuts automatiquement. Vendio prépare le message, et vous le publiez vous-même.</p></details>
+<details><summary>Les résultats sont-ils garantis ?</summary><p>Non. Vendio vous fait gagner du temps et vous donne des textes prêts à l’emploi, mais personne ne peut garantir des ventes. Relisez chaque publication et adaptez-la à votre style avant de la poster.</p></details>
+<details><summary>Que deviennent mes données ?</summary><p>Vos descriptions et photos sont envoyées à Google Gemini pour générer les textes. N’y mettez pas d’informations personnelles ou confidentielles. Votre compte fonctionne avec votre adresse e-mail.</p></details>
+<details><summary>Comment payer le Premium ?</summary><p>Le paiement n’est pas encore ouvert. Les moyens de paiement seront annoncés sur cette page avant le lancement du Premium.</p></details>
+</section>
+<footer class="mut" style="text-align:center">Vendio · Des publications prêtes, pour vendre plus facilement<br><a href="confidentialite.html" style="color:var(--acc)">Confidentialité</a> · <a href="conditions.html" style="color:var(--acc)">Conditions d’utilisation</a> · <a href="mailto:vendio2027@gmail.com" style="color:var(--acc)">Contact</a></footer>
+</main>
+<script>
+const SB_URL='https://obwbkstxzdbtaqbuwloa.supabase.co';
+const SB_KEY='sb_publishable_Srwd_vkFi7GkFIWzl9X52Q_tosKy797';
+const FN=SB_URL+'/functions/v1/smart-service';
+const PAY=SB_URL+'/functions/v1/pay';
+const LIM=3;const PLIM=60;
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=s=>document.querySelector(s);
+const st={type:'Ebook',plats:new Set(['WhatsApp','Facebook','Instagram']),photo:null,all:'',plan:'free',used:0};
+function amsg(t){$('#amsg').textContent=t}
+function msg(t){$('#msg').textContent=t}
+
+async function refresh(){
+  if(st.recov){['#auth','#app','#landing'].forEach(i=>{$(i).hidden=true});$('#recov').hidden=false;$('#out').hidden=true;return}
+  $('#recov').hidden=true;
+  const {data}=await sb.auth.getSession();
+  const s=data.session;
+  $('#auth').hidden=!!s;
+  $('#app').hidden=!s;
+  $('#out').hidden=!s;
+  $('#landing').hidden=!!s;
+  $('#who').textContent=s?s.user.email:'';
+  if(!s)document.querySelectorAll('.cur').forEach(e=>{e.hidden=true});
+  if(s){loadQuota();loadHistory();loadShop();
+    if(location.search.includes('pay=return')&&!st.payChecked){st.payChecked=true;history.replaceState(null,'',location.pathname);verifyPay(true)}
+  }
+}
+sb.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY')st.recov=true;setTimeout(refresh,0)});
+refresh();
+
+function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}
+async function saveGen(name,posts){
+  try{await sb.from('generations').insert({name:name,product_type:st.type,platforms:[...st.plats],posts:posts});loadHistory()}catch(e){}
+}
+async function loadHistory(){
+  const box=$('#hist');
+  const {data,error}=await sb.from('generations').select('id,name,created_at,platforms,posts').order('created_at',{ascending:false}).limit(20);
+  box.replaceChildren();
+  if(error){box.textContent='Historique indisponible pour le moment.';return}
+  if(!data||!data.length){box.textContent='Aucune génération pour l’instant.';return}
+  data.forEach(g=>{
+    const c=document.createElement('div');c.className='post';
+    const h=document.createElement('strong');h.textContent=g.name;
+    const m=document.createElement('span');m.className='mut';m.textContent=fmtDate(g.created_at)+' · '+(g.platforms||[]).join(', ');
+    const r=document.createElement('div');r.className='row';
+    const v=document.createElement('button');v.type='button';v.className='ghost';v.textContent='Voir';v.addEventListener('click',()=>render(g.posts));
+    const x=document.createElement('button');x.type='button';x.className='ghost';x.textContent='Supprimer';
+    x.addEventListener('click',async()=>{if(!confirm('Supprimer cette génération ?'))return;await sb.from('generations').delete().eq('id',g.id);loadHistory()});
+    r.append(v,x);c.append(h,m,r);box.append(c);
+  });
+}
+async function loadQuota(){
+  const m=new Date().toISOString().slice(0,7);
+  const [p,u]=await Promise.all([
+    sb.from('profiles').select('plan,plan_expires_at').maybeSingle(),
+    sb.from('usage').select('count').eq('month',m).maybeSingle()
+  ]);
+  const pr=p.data||{};
+  st.exp=pr.plan_expires_at?new Date(pr.plan_expires_at):null;
+  st.plan=(pr.plan==='premium'&&(!st.exp||st.exp>new Date()))?'premium':'free';
+  st.used=(u.data&&u.data.count)||0;
+  $('#o30').disabled=st.plan!=='premium';
+  $('#p-free .cur').hidden=st.plan==='premium';
+  $('#p-prem .cur').hidden=st.plan!=='premium';
+  $('#sub').textContent=st.plan==='premium'?'Renouveler · 600 FCFA (+30 jours)':'S’abonner · 600 FCFA pour 30 jours';
+  if(st.plan==='premium'){const n=Math.max(0,PLIM-st.used);$('#left').textContent='Plan Premium · '+n+' génération'+(n>1?'s':'')+' restante'+(n>1?'s':'')+' ce mois-ci'+(st.exp?' · jusqu’au '+st.exp.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'');}
+  else{const n=Math.max(0,LIM-st.used);$('#left').textContent=n+' génération'+(n>1?'s':'')+' gratuite'+(n>1?'s':'')+' restante'+(n>1?'s':'')+' ce mois-ci';}
+}
+
+$('#login').addEventListener('click',async()=>{
+  const email=$('#em').value.trim(),password=$('#pw').value;
+  if(!email||!password){amsg('Renseignez votre e-mail et votre mot de passe.');return}
+  amsg('Connexion…');
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){amsg(/not confirmed/i.test(error.message)?'Confirmez d’abord votre adresse e-mail (vérifiez votre boîte de réception).':'E-mail ou mot de passe incorrect.');return}
+  amsg('');
+});
+$('#signup').addEventListener('click',async()=>{
+  const email=$('#em').value.trim(),password=$('#pw').value;
+  if(!email||password.length<8){amsg('Entrez un e-mail et un mot de passe de 8 caractères minimum.');return}
+  amsg('Création du compte…');
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){amsg(/registered|exists/i.test(error.message)?'Ce compte existe déjà, connectez-vous.':'Impossible de créer le compte : '+error.message);return}
+  amsg(data.session?'':'Compte créé. Vérifiez votre boîte e-mail pour confirmer, puis connectez-vous.');
+});
+$('#out').addEventListener('click',async()=>{await sb.auth.signOut();$('#outp').replaceChildren();$('#res').hidden=true;$('#hist').replaceChildren();st.shop={name:'',wa:'',tone:'',logo:''};st.logoImg=null;['#sname','#swa','#stone','#wa'].forEach(s=>{$(s).value=''});$('#lprev').hidden=true;drawPoster()});
+
+function applyTheme(t){
+  const r=document.documentElement;
+  if(t==='dark'||t==='light')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme');
+  $('#theme').textContent='Thème : '+(t==='dark'?'Sombre':t==='light'?'Clair':'Auto');
+}
+let th='auto';
+try{th=localStorage.getItem('vendio_theme')||'auto'}catch(e){}
+applyTheme(th);
+$('#theme').addEventListener('click',()=>{
+  th=th==='auto'?'dark':th==='dark'?'light':'auto';
+  try{localStorage.setItem('vendio_theme',th)}catch(e){}
+  applyTheme(th);
+});
+function setMode(m){
+  $('#login').className=m==='login'?'go':'ghost';
+  $('#signup').className=m==='signup'?'go':'ghost';
+  $('#pw').autocomplete=m==='signup'?'new-password':'current-password';
+}
+$('#login').addEventListener('click',()=>setMode('login'));
+$('#signup').addEventListener('click',()=>setMode('signup'));
+$('#forgot').addEventListener('click',async()=>{
+  const email=$('#em').value.trim();
+  if(!email){amsg('Écrivez d’abord votre adresse e-mail ci-dessus.');return}
+  amsg('Envoi du lien…');
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  amsg(error?'Impossible d’envoyer le lien pour le moment, réessayez plus tard.':'Si ce compte existe, un e-mail vient d’être envoyé. Ouvrez le lien qu’il contient.');
+});
+$('#np-go').addEventListener('click',async()=>{
+  const p=$('#np').value;
+  if(p.length<8){$('#rmsg').textContent='8 caractères minimum.';return}
+  const {error}=await sb.auth.updateUser({password:p});
+  if(error){$('#rmsg').textContent='Impossible de changer le mot de passe : '+error.message;return}
+  st.recov=false;$('#np').value='';$('#rmsg').textContent='';refresh();
+});
+function sm(t){$('#submsg').textContent=t}
+async function callPay(action){
+  const {data}=await sb.auth.getSession();
+  if(!data.session){sm('Connectez-vous d’abord pour vous abonner.');window.scrollTo({top:0,behavior:'smooth'});return null}
+  const r=await fetch(PAY,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+data.session.access_token},body:JSON.stringify({action:action})});
+  const j=await r.json().catch(()=>({}));
+  return {ok:r.ok,status:r.status,j:j};
+}
+async function verifyPay(auto){
+  sm('Vérification du paiement…');
+  const res=await callPay('verify');
+  if(!res)return;
+  if(!res.ok){sm('Vérification impossible pour le moment, réessayez dans un instant.');return}
+  if(res.j.activated){await loadQuota();sm('Paiement confirmé : votre plan Premium est actif.')}
+  else if(res.j.premium){await loadQuota();sm(auto?'':'Votre plan Premium est déjà actif.')}
+  else sm(auto?'Paiement non confirmé pour l’instant. Si vous venez de payer, patientez une minute puis appuyez sur « Vérifier mon paiement ».':'Aucun paiement confirmé pour l’instant.');
+  if(auto)$('#p-prem').scrollIntoView({behavior:'smooth'});
+}
+$('#sub').addEventListener('click',async()=>{
+  const b=$('#sub');b.disabled=true;sm('Préparation du paiement…');
+  try{
+    const res=await callPay('create');
+    if(!res)return;
+    if(!res.ok||!res.j.url){sm(res.status===401?'Votre session a expiré, reconnectez-vous.':res.status===429?'Trop de tentatives, réessayez dans quelques minutes.':'Le paiement n’est pas disponible pour le moment, réessayez plus tard.');return}
+    location.href=res.j.url;
+  }catch(e){sm('Connexion impossible, vérifiez votre réseau.')}
+  finally{b.disabled=false}
+});
+$('#vpay').addEventListener('click',()=>verifyPay(false));
+function chips(id,single){const bs=document.querySelectorAll('#'+id+' button');bs.forEach(b=>b.addEventListener('click',()=>{if(single){bs.forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.type=b.textContent}else{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));on?st.plats.add(b.textContent):st.plats.delete(b.textContent)}}))}
+chips('types',true);chips('plats',false);
+st.tpl='Nuit';st.img=null;
+const TPL={
+  'Nuit':{bg:'#0E1116',fg:'#F2F5F7',acc:'#3DDC84',on:'#08130C'},
+  'Chaleur':{bg:'#FFF6E9',fg:'#2B1B0E',acc:'#C2410C',on:'#FFFFFF'},
+  'Clair':{bg:'#FFFFFF',fg:'#14162B',acc:'#3B3FD9',on:'#FFFFFF'}
+};
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function wrap(c,t,x,y,mw,lh,max){const ws=t.split(/\s+/);let l='',n=0;for(const k of ws){const test=l?l+' '+k:k;if(c.measureText(test).width>mw&&l){c.fillText(l,x,y+n*lh);n++;l=k;if(n>=max)return}else l=test}c.fillText(l,x,y+n*lh)}
+function drawPoster(){
+  const cv=$('#poster'),c=cv.getContext('2d'),T=TPL[st.tpl];
+  const name=$('#nom').value.trim()||'Nom du produit',price=$('#prix').value.trim(),wa=$('#wa').value.trim();
+  c.clearRect(0,0,1080,1080);
+  c.fillStyle=T.bg;c.fillRect(0,0,1080,1080);
+  const x=60,y=60,w=960,h=640;
+  c.save();rr(c,x,y,w,h,36);c.clip();
+  c.textAlign='left';c.textBaseline='alphabetic';
+  if(st.img){const k=Math.max(w/st.img.width,h/st.img.height),iw=st.img.width*k,ih=st.img.height*k;c.drawImage(st.img,x+(w-iw)/2,y+(h-ih)/2,iw,ih)}
+  else{c.fillStyle=T.acc;c.fillRect(x,y,w,h);c.fillStyle=T.on;c.font='700 110px "Space Grotesk",sans-serif';wrap(c,name,x+60,y+200,w-120,130,3)}
+  c.restore();
+  drawBrand(c,T);
+  c.textAlign='left';c.textBaseline='alphabetic';
+  if(st.img){c.fillStyle=T.fg;c.font='700 60px "Space Grotesk",sans-serif';wrap(c,name,60,790,960,70,2)}
+  if(price){c.font='700 48px "Space Grotesk",sans-serif';const tw=c.measureText(price).width;c.fillStyle=T.acc;rr(c,60,905,tw+64,88,44);c.fill();c.fillStyle=T.on;c.fillText(price,92,968)}
+  if(wa){c.font='600 38px Inter,sans-serif';c.fillStyle=T.fg;c.textAlign='right';c.fillText('WhatsApp : '+wa,1020,962)}
+}
+function loadImg(){
+  if(!st.photo){st.img=null;drawPoster();return}
+  const u=URL.createObjectURL(st.photo),im=new Image();
+  im.onload=()=>{st.img=im;URL.revokeObjectURL(u);drawPoster()};
+  im.onerror=()=>{st.img=null;URL.revokeObjectURL(u);drawPoster()};
+  im.src=u;
+}
+st.shop={name:'',wa:'',tone:'',logo:''};st.logoImg=null;
+function drawBrand(c,T){
+  const sn=st.shop.name,lg=st.logoImg;
+  if(!sn&&!lg)return;
+  c.save();c.font='600 34px Inter,sans-serif';
+  const tw=sn?c.measureText(sn).width:0,size=76,pad=14;
+  const w=(lg?size:0)+(sn?tw+(lg?16:0):0)+pad*2,h=size+pad*2;
+  c.globalAlpha=0.92;c.fillStyle=T.bg;rr(c,84,84,w,h,h/2);c.fill();c.globalAlpha=1;
+  let x=84+pad;
+  if(lg){c.save();c.beginPath();c.arc(x+size/2,84+pad+size/2,size/2,0,Math.PI*2);c.clip();c.drawImage(lg,x,84+pad,size,size);c.restore();x+=size+16}
+  if(sn){c.fillStyle=T.fg;c.textAlign='left';c.textBaseline='middle';c.fillText(sn,x,84+h/2)}
+  c.restore();
+}
+function setLogo(src){
+  if(!src){st.logoImg=null;$('#lprev').hidden=true;drawPoster();return}
+  const im=new Image();
+  im.onload=()=>{st.logoImg=im;$('#lprev').src=src;$('#lprev').hidden=false;drawPoster()};
+  im.onerror=()=>{st.logoImg=null;drawPoster()};
+  im.src=src;
+}
+async function loadShop(){
+  const {data}=await sb.from('shops').select('shop_name,whatsapp,tone,logo').maybeSingle();
+  const s=data||{};
+  st.shop={name:s.shop_name||'',wa:s.whatsapp||'',tone:s.tone||'',logo:s.logo||''};
+  $('#sname').value=st.shop.name;$('#swa').value=st.shop.wa;$('#stone').value=st.shop.tone;
+  if(!$('#wa').value&&st.shop.wa)$('#wa').value=st.shop.wa;
+  setLogo(st.shop.logo);
+}
+$('#sname').addEventListener('input',e=>{st.shop.name=e.target.value.trim();drawPoster()});
+$('#slogo').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const u=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{const k=Math.min(im.width,im.height),cv=document.createElement('canvas');cv.width=cv.height=256;const x=cv.getContext('2d');x.fillStyle='#FFFFFF';x.fillRect(0,0,256,256);x.drawImage(im,(im.width-k)/2,(im.height-k)/2,k,k,0,0,256,256);URL.revokeObjectURL(u);st.shop.logo=cv.toDataURL('image/jpeg',0.85);setLogo(st.shop.logo)};
+  im.onerror=()=>{URL.revokeObjectURL(u)};
+  im.src=u;
+});
+$('#sdel').addEventListener('click',()=>{st.shop.logo='';$('#slogo').value='';setLogo('')});
+$('#sshop').addEventListener('click',async()=>{
+  const {data}=await sb.auth.getSession();
+  if(!data.session)return;
+  const row={user_id:data.session.user.id,shop_name:$('#sname').value.trim().slice(0,60),whatsapp:$('#swa').value.trim().slice(0,30),tone:$('#stone').value,logo:st.shop.logo||null,updated_at:new Date().toISOString()};
+  const {error}=await sb.from('shops').upsert(row);
+  $('#smsg').textContent=error?'Enregistrement impossible, réessayez.':'Boutique enregistrée.';
+  if(!error){st.shop.name=row.shop_name;st.shop.wa=row.whatsapp;st.shop.tone=row.tone;if(!$('#wa').value&&row.whatsapp)$('#wa').value=row.whatsapp;drawPoster()}
+});
+$('#photo').addEventListener('change',e=>{st.photo=e.target.files[0]||null;loadImg()});
+document.querySelectorAll('#tpls button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#tpls button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');st.tpl=b.textContent;drawPoster()}));
+['#nom','#prix','#wa'].forEach(s=>$(s).addEventListener('input',drawPoster));
+$('#dl').addEventListener('click',()=>{drawPoster();$('#poster').toBlob(b=>{if(!b)return;const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='vendio-visuel.png';document.body.append(a);a.click();a.remove()})});
+if(!navigator.share)$('#shareimg').hidden=true;
+$('#shareimg').addEventListener('click',()=>{drawPoster();$('#poster').toBlob(async b=>{if(!b)return;const f=new File([b],'vendio-visuel.png',{type:'image/png'});try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});else{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='vendio-visuel.png';document.body.append(a);a.click();a.remove()}}catch(e){}})});
+document.fonts.ready.then(drawPoster);
+
+function shrink(f){return new Promise(res=>{const im=new Image();const u=URL.createObjectURL(f);im.onload=()=>{const k=Math.min(1,1024/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({mime:'image/jpeg',data:c.toDataURL('image/jpeg',0.8).split(',')[1]})};im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u})}
+async function copy(t,b){const l=b.dataset.l||b.textContent;b.dataset.l=l;try{await navigator.clipboard.writeText(t);b.textContent='Copié'}catch(e){b.textContent='Copie impossible'}setTimeout(()=>{b.textContent=l},1500)}
+function render(d){
+  const out=$('#outp');out.replaceChildren();
+  if(!Array.isArray(d)||!d.length){msg('Aucun résultat, réessayez.');return}
+  st.all=d.map(p=>'Jour '+p.day+' · '+p.platform+'\n'+p.text).join('\n\n');
+  d.forEach(p=>{
+    const c=document.createElement('div');c.className='post';c.style.width='100%';
+    const h=document.createElement('span');h.className='tag';h.textContent='Jour '+p.day+' · '+p.platform;
+    const t=document.createElement('textarea');t.className='ed';t.value=p.text;t.setAttribute('aria-label','Texte de la publication, modifiable');t.rows=Math.max(3,Math.ceil(p.text.length/36));
+    const r=document.createElement('div');r.className='row';
+    const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent='Copier';b.addEventListener('click',()=>copy(t.value,b));
+    r.append(b);
+    if(navigator.share){const s=document.createElement('button');s.type='button';s.className='ghost';s.textContent='Partager';s.addEventListener('click',()=>{navigator.share({text:t.value}).catch(()=>{})});r.append(s)}
+    const rb=document.createElement('button');rb.type='button';rb.className='ghost';rb.textContent='Programmer un rappel';
+    const rp=document.createElement('div');rp.className='row';rp.hidden=true;rp.style.alignItems='center';
+    const di=document.createElement('input');di.type='datetime-local';di.setAttribute('aria-label','Date et heure du rappel');
+    const ok=document.createElement('button');ok.type='button';ok.className='go';ok.textContent='Créer le rappel';
+    const note=document.createElement('span');note.className='mut';
+    rp.append(di,ok,note);
+    rb.addEventListener('click',()=>{
+      const prem=st.plan==='premium';
+      rp.hidden=!rp.hidden;di.hidden=!prem;ok.hidden=!prem;
+      note.textContent=prem?'Votre téléphone ajoutera le rappel à votre calendrier.':'Les rappels de publication sont réservés au plan Premium.';
+    });
+    ok.addEventListener('click',()=>{
+      if(!di.value){note.textContent='Choisissez une date et une heure.';return}
+      makeReminder('Publier sur '+p.platform+' · Vendio',t.value,di.value);
+      note.textContent='Rappel créé : ouvrez le fichier téléchargé pour l’ajouter à votre calendrier.';
+    });
+    r.append(rb);
+    c.append(h,t,r,rp);out.append(c);
+  });
+  $('#res').hidden=false;$('#res').scrollIntoView({behavior:'smooth'});
+}
+function collect(){return [...document.querySelectorAll('#outp .post')].map(c=>c.querySelector('.tag').textContent+'\n'+c.querySelector('textarea').value).join('\n\n')}
+$('#all').addEventListener('click',e=>copy(collect(),e.target));
+function clearResults(){$('#outp').replaceChildren();$('#res').hidden=true;st.all='';msg('')}
+$('#clr').addEventListener('click',clearResults);
+$('#reset').addEventListener('click',()=>{
+  ['#nom','#desc','#lien','#prix','#wa'].forEach(s=>{$(s).value=''});st.img=null;drawPoster();
+  $('#photo').value='';st.photo=null;clearResults();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+function icsEsc(t){return t.replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n')}
+function icsFold(l){const o=[];while(l.length>60){o.push(l.slice(0,60));l=' '+l.slice(60)}o.push(l);return o.join('\r\n')}
+function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'')}
+function makeReminder(title,text,when){
+  const s=new Date(when),e=new Date(s.getTime()+15*60000);
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Vendio//FR','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+Date.now()+'-'+Math.random().toString(36).slice(2)+'@vendio','DTSTAMP:'+icsDate(new Date()),'DTSTART:'+icsDate(s),'DTEND:'+icsDate(e),'SUMMARY:'+icsEsc(title),'DESCRIPTION:'+icsEsc(text),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(title),'TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'];
+  const blob=new Blob([lines.map(icsFold).join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rappel-vendio.ics';document.body.append(a);a.click();a.remove();
+}
+function errText(status,code){
+  if(status===401)return'Votre session a expiré, reconnectez-vous.';
+  if(status===402)return st.plan==='premium'?'Vous avez utilisé vos '+PLIM+' générations de ce mois.':'Vous avez utilisé vos '+LIM+' générations gratuites ce mois-ci. Passez en Premium pour continuer.';
+  if(status===429)return'Le service est très demandé, réessayez dans une minute.';
+  if(status===400)return code==='link'?'Le lien n’est pas valide : il doit commencer par http:// ou https://.':'Vérifiez le nom, la description et les plateformes.';
+  return'La génération a échoué, réessayez.';
+}
+
+$('#go').addEventListener('click',async()=>{
+  const name=$('#nom').value.trim(),desc=$('#desc').value.trim(),link=$('#lien').value.trim(),btn=$('#go');
+  if(!name||!desc){msg('Renseignez le nom et la description du produit.');return}
+  if(link&&!/^https?:\/\/\S+$/i.test(link)){msg('Le lien doit commencer par http:// ou https://');return}
+  if(!st.plats.size){msg('Choisissez au moins une plateforme.');return}
+  btn.disabled=true;msg('Génération en cours…');
+  try{
+    const {data}=await sb.auth.getSession();
+    if(!data.session){msg('Votre session a expiré, reconnectez-vous.');return}
+    const extra=[st.shop.name?'Boutique : '+st.shop.name:'',$('#stone').value?'Style souhaité : '+$('#stone').value:''].filter(Boolean).join('. ');
+    const fullDesc=((extra?extra+'. ':'')+desc).slice(0,800);
+    const body={type:st.type,name:name,desc:fullDesc,link:link,platforms:[...st.plats],days:Number($('#duree').value)};
+    if(st.photo){const im=await shrink(st.photo);if(im)body.image=im}
+    const r=await fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+data.session.access_token},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok){msg(errText(r.status,j.error));if(r.status===402)loadQuota();return}
+    render(j.posts);msg('');loadQuota();saveGen(name,j.posts);
+  }catch(e){msg('Connexion impossible, vérifiez votre réseau et réessayez.')}
+  finally{btn.disabled=false}
+});
+</script>
+</body>
+</html>
